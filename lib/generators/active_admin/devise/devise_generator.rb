@@ -7,8 +7,25 @@ module ActiveAdmin
       class_option  :registerable, :type => :boolean, :default => false,
                     :desc => "Should the generated resource be registerable?"
 
-      def install_devise
-        require 'devise'
+      def install_devise	
+        begin
+          require 'devise'
+        rescue LoadError => e
+          $stderr.puts ["You don't have Devise installed in your application. Please add it to your",
+                        "Gemfile and run bundle install. If you do not require Devise run the generator with",
+                        "--skip-users option"].join(' ')
+          exit
+        end
+        run_devise_generator
+        create_admin_user
+        remove_registerable_from_model
+        set_namespace_for_path
+        add_default_user_to_migration
+      end
+
+      private
+
+      def run_devise_generator
         if File.exists?(File.join(destination_root, "config", "initializers", "devise.rb"))
           log :generate, "No need to install devise, already done."
         else
